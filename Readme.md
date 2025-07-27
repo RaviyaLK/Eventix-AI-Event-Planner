@@ -59,7 +59,7 @@ Follow these steps to get the Eventix-AI Event Planner up and running locally.
 ### 📁 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/eventix-ai-event-planner.git
+git clone https://github.com/RaviyaLK/Eventix-AI-Event-Planner.git
 cd eventix-ai-event-planner
 ```
 
@@ -84,6 +84,7 @@ Create a `.env` file or edit the config file to include your **OpenRouter** (or 
 
 ```env
 OPENROUTER_API_KEY=your_api_key_here
+TAVILY_API_KEY=your_tavily_api_key
 ```
 
 ### 🚀 4. Run the FastAPI Server
