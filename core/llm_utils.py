@@ -11,7 +11,7 @@ HEADERS = {
 
 def generate_response_openrouter(prompt: str, system_prompt: str = "You are a helpful AI assistant.") -> str:
     payload = {
-        "model": settings.OPENROUTER_MODEL,  # from .env
+        "model": settings.OPENROUTER_MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}

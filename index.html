@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventix-AI Event Planner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+            min-height: 100vh;
+            color: #1f2937;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 60%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 4rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .header .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+            font-weight: 400;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .main-card {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(40px);
+            border-radius: 24px;
+            padding: 3.5rem;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.5), transparent);
+        }
+
+        .input-section {
+            margin-bottom: 2.5rem;
+        }
+
+        .input-label {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            display: block;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .input-label::before {
+            content: '✨';
+            font-size: 1.1rem;
+        }
+
+        .prompt-input {
+            width: 100%;
+            min-height: 140px;
+            padding: 2rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            line-height: 1.6;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .prompt-input:placeholder {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1),
+                        inset 0 2px 4px rgba(0,0,0,0.02),
+                        0 10px 25px rgba(99, 102, 241, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+            color: white;
+            border: none;
+            padding: 1.25rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            min-width: 200px;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .generate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .generate-btn:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.4);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-section {
+            display: none;
+            text-align: center;
+            margin: 3rem 0;
+            padding: 2.5rem;
+            background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 100%);
+            border-radius: 20px;
+            border: 1px solid #e0e7ff;
+        }
+
+        .time-estimate {
+            font-size: 0.95rem;
+            color: #6366f1;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .time-estimate::before {
+            content: '⏱️';
+        }
+
+        .progress-text {
+            color: #4338ca;
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            min-height: 1.5rem;
+        }
+
+        .progress-bar-container {
+            position: relative;
+            margin: 1.5rem 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e0e7ff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6, #ec4899);
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-percentage {
+            position: absolute;
+            top: -2rem;
+            right: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6366f1;
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 3rem;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .result-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1f2937;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-title::before {
+            content: '📋';
+            font-size: 1.5rem;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3);
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(135deg, #047857 0%, #059669 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(5, 150, 105, 0.4);
+        }
+
+        .result-content {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border-radius: 16px;
+            padding: 2.5rem;
+            border-left: 4px solid #6366f1;
+            white-space: pre-wrap;
+            line-height: 1.7;
+            max-height: 700px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .result-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .result-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .result-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .result-content h1 {
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            font-weight: 700;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+
+        .result-content h2 {
+            color: #374151;
+            margin: 2rem 0 1rem 0;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .result-content h3 {
+            color: #6366f1;
+            margin: 1.5rem 0 0.8rem 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .result-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .result-content th,
+        .result-content td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .result-content th {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .result-content td {
+            font-size: 0.95rem;
+        }
+
+        .result-content tr:hover {
+            background: #f8fafc;
+        }
+
+        .spinner {
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid transparent;
+            border-top: 2.5px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            color: #dc2626;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            display: none;
+            border-left: 4px solid #dc2626;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+        }
+
+        .tips-section {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f7fee7 100%);
+            border-radius: 16px;
+            border-left: 4px solid #22c55e;
+        }
+
+        .tips-title {
+            font-weight: 600;
+            color: #166534;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tips-title::before {
+            content: '💡';
+        }
+
+        .tips-list {
+            color: #166534;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .tips-list li {
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2.8rem;
+            }
+            
+            .main-card {
+                padding: 2rem;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .generate-btn {
+                padding: 1rem 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .main-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Eventix-AI</h1>
+            <p class="subtitle">Your intelligent event planning assistant. Describe your dream event and let our AI create a comprehensive plan with venues, agenda,  and budget breakdown.</p>
+        </div>
+
+        <div class="main-card">
+            <div class="input-section">
+                <label class="input-label">Describe Your Event Vision</label>
+                <textarea 
+                    class="prompt-input" 
+                    id="promptInput"
+                    placeholder="Example: I want to organize a 2-day environmental sustainability conference in Tokyo, Japan focused on renewable energy innovations and community engagement. Please plan the event including venue suggestions, agenda, speakers, and a budget within $120,000"
+                ></textarea>
+            </div>
+
+            <button class="generate-btn" id="generateBtn">
+                <span id="generateText">Generate Event Plan</span>
+                <div class="spinner" id="spinner" style="display: none;"></div>
+            </button>
+
+            <div class="progress-section" id="progressSection">
+                <div class="time-estimate" id="timeEstimate">Estimated time: 4-6 minutes</div>
+                <div class="progress-text" id="progressText">Initializing AI analysis...</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-percentage" id="progressPercentage">0%</div>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-header">
+                    <div class="result-title">Your Event Plan</div>
+                    <button class="download-btn" id="downloadBtn">
+                        📄 Download PDF
+                    </button>
+                </div>
+                <div class="result-content" id="resultContent"></div>
+            </div>
+
+            <div class="tips-section">
+                <div class="tips-title">Pro Tips for Better Results</div>
+                <ul class="tips-list">
+                    <li><strong>Be specific:</strong> Include location, duration, budget range, and target audience</li>
+                    <li><strong>Mention preferences:</strong> Indoor/outdoor, formal/casual, special requirements</li>
+                    <li><strong>Include constraints:</strong> Accessibility needs, dietary restrictions, or timing preferences</li>
+                    <li><strong>Add goals:</strong> What do you want attendees to gain from this event?</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const promptInput = document.getElementById('promptInput');
+        const generateBtn = document.getElementById('generateBtn');
+        const generateText = document.getElementById('generateText');
+        const spinner = document.getElementById('spinner');
+        const progressSection = document.getElementById('progressSection');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressPercentage = document.getElementById('progressPercentage');
+        const timeEstimate = document.getElementById('timeEstimate');
+        const resultSection = document.getElementById('resultSection');
+        const resultContent = document.getElementById('resultContent');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let currentReport = '';
+        let progressInterval;
+        let startTime;
+
+        const progressSteps = [
+            { text: "Initializing AI analysis...", progress: 3, duration: 8000 },
+            { text: "Analyzing your event requirements...", progress: 12, duration: 15000 },
+            { text: "Researching venues and locations...", progress: 25, duration: 20000 },
+            { text: "Sourcing event experts...", progress: 40, duration: 25000 },
+            { text: "Planning detailed agenda and timeline...", progress: 58, duration: 30000 },
+            { text: "Calculating budget and cost optimization...", progress: 75, duration: 35000 },
+            { text: "Finalizing recommendations and logistics...", progress: 88, duration: 40000 },
+            { text: "Generating comprehensive event plan...", progress: 95, duration: 45000 },
+            { text: "Completing final review and formatting...", progress: 100, duration: 50000 }
+        ];
+
+        function updateTimeEstimate() {
+            if (!startTime) return;
+            
+            const elapsed = Date.now() - startTime;
+            const elapsedMinutes = Math.floor(elapsed / 60000);
+            const elapsedSeconds = Math.floor((elapsed % 60000) / 1000);
+            
+            const remainingMs = 300000 - elapsed; // 5 minutes total
+            const remainingMinutes = Math.max(0, Math.floor(remainingMs / 60000));
+            const remainingSeconds = Math.max(0, Math.floor((remainingMs % 60000) / 1000));
+            
+            if (remainingMs > 0) {
+                timeEstimate.textContent = `Estimated time remaining: ${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            } else {
+                timeEstimate.textContent = "Almost done! Finalizing your event plan...";
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 7000);
+        }
+
+        function simulateProgress() {
+            let currentStep = 0;
+            startTime = Date.now();
+            
+            // Update time estimate every second
+            const timeInterval = setInterval(updateTimeEstimate, 1000);
+            
+            const updateProgress = () => {
+                if (currentStep < progressSteps.length) {
+                    const step = progressSteps[currentStep];
+                    progressText.textContent = step.text;
+                    progressFill.style.width = step.progress + '%';
+                    progressPercentage.textContent = Math.round(step.progress) + '%';
+                    
+                    currentStep++;
+                    
+                    // Use the duration from the step, with some randomization
+                    const baseDuration = step.duration;
+                    const randomization = baseDuration * 0.3; // ±30% randomization
+                    const actualDuration = baseDuration + (Math.random() - 0.5) * randomization;
+                    
+                    setTimeout(updateProgress, actualDuration);
+                } else {
+                    clearInterval(timeInterval);
+                }
+            };
+            
+            updateProgress();
+        }
+
+        async function generateEventPlan() {
+            const prompt = promptInput.value.trim();
+            
+            if (!prompt) {
+                showError('Please describe your event vision before generating a plan.');
+                return;
+            }
+
+            if (prompt.length < 50) {
+                showError('Please provide more details about your event for better results (at least 50 characters).');
+                return;
+            }
+
+            // UI Updates
+            generateBtn.disabled = true;
+            generateText.textContent = 'Generating Your Plan...';
+            spinner.style.display = 'block';
+            progressSection.style.display = 'block';
+            resultSection.style.display = 'none';
+            errorMessage.style.display = 'none';
+
+            simulateProgress();
+
+            try {
+                const response = await fetch('http://localhost:8000/api/plan/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}. Please try again or contact support.`);
+                }
+
+                const data = await response.json();
+                currentReport = data.report;
+                
+                // Format the report content
+                resultContent.innerHTML = formatReport(currentReport);
+                resultSection.style.display = 'block';
+                
+                // Scroll to results
+                resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (error) {
+                console.error('Error:', error);
+                let errorMsg = 'Failed to generate event plan. ';
+                
+                if (error.message.includes('Failed to fetch')) {
+                    errorMsg += 'Please ensure the server is running on localhost:8000 and try again.';
+                } else if (error.message.includes('500')) {
+                    errorMsg += 'Server error occurred. Please try again in a moment.';
+                } else {
+                    errorMsg += error.message;
+                }
+                
+                showError(errorMsg);
+            } finally {
+                // Reset UI
+                generateBtn.disabled = false;
+                generateText.textContent = 'Generate Event Plan';
+                spinner.style.display = 'none';
+                progressSection.style.display = 'none';
+                startTime = null;
+            }
+        }
+
+        function formatReport(report) {
+            // Clean up the report and remove # symbols
+            let cleaned = report
+                // First, handle markdown headers properly
+                .replace(/^#{1,6}\s+/gm, '')
+                // Remove any remaining standalone # symbols
+                .replace(/^#\s*$/gm, '')
+                .replace(/\s+#\s+/g, ' ')
+                // Clean up multiple line breaks
+                .replace(/\n{3,}/g, '\n\n');
+
+            // Convert markdown-like formatting to HTML
+            let formatted = cleaned
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Handle lists
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                // Handle table formatting
+                .replace(/\|(.+)\|/g, (match, content) => {
+                    const cells = content.split('|').map(cell => cell.trim());
+                    const isHeader = cells.some(cell => 
+                        cell.includes('Category') || 
+                        cell.includes('Cost') || 
+                        cell.includes('Estimated') ||
+                        cell.includes('Features') ||
+                        cell.includes('Capacity')
+                    );
+                    const tag = isHeader ? 'th' : 'td';
+                    const cellsHtml = cells.map(cell => `<${tag}>${cell}</${tag}>`).join('');
+                    return `<tr>${cellsHtml}</tr>`;
+                })
+                // Convert line breaks
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            
+            // Wrap tables
+            if (formatted.includes('<tr>')) {
+                formatted = formatted.replace(/(<tr>.*?<\/tr>)/gs, '<table>$1</table>');
+            }
+            
+            // Wrap in paragraphs
+            formatted = '<p>' + formatted + '</p>';
+            
+            // Clean up formatting
+            formatted = formatted
+                .replace(/<p><\/p>/g, '')
+                .replace(/<p><br>/g, '<p>')
+                .replace(/<br><\/p>/g, '</p>')
+                .replace(/<p>(<table>)/g, '$1')
+                .replace(/(<\/table>)<\/p>/g, '$1')
+                .replace(/<p>(<ul>)/g, '$1')
+                .replace(/(<\/ul>)<\/p>/g, '$1')
+                // Add some structure for better readability
+                .replace(/Executive Summary/g, '<h1>Executive Summary</h1>')
+                .replace(/Venue Options/g, '<h1>Venue Options</h1>')
+                .replace(/Proposed Agenda/g, '<h1>Proposed Agenda</h1>')
+                .replace(/Budget Breakdown/g, '<h1>Budget Breakdown</h1>')
+                .replace(/Recommendations/g, '<h1>Recommendations</h1>')
+                .replace(/Day \d+:/g, '<h2>$&</h2>')
+                .replace(/\d+\.\s+([^<\n]+)/g, '<h3>$1</h3>');
+            
+            return formatted;
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Configure PDF styling
+            doc.setFont("helvetica");
+            let yPosition = 25;
+            const lineHeight = 7;
+            const margin = 20;
+            const pageWidth = doc.internal.pageSize.width;
+            const maxWidth = pageWidth - (margin * 2);
+
+            // Header with branding
+            doc.setFontSize(28);
+            doc.setTextColor(99, 102, 241);
+            doc.text("Eventix-AI Event Plan", margin, yPosition);
+            yPosition += 12;
+
+            // Subtitle
+            doc.setFontSize(12);
+            doc.setTextColor(120, 120, 120);
+            doc.text("Professional Event Planning Report", margin, yPosition);
+            yPosition += 8;
+
+            // Date and time
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            const now = new Date();
+            doc.text(`Generated on: ${now.toLocaleDateString()} at ${now.toLocaleTimeString()}`, margin, yPosition);
+            yPosition += 15;
+
+            // Separator line
+            doc.setDrawColor(99, 102, 241);
+            doc.setLineWidth(0.5);
+            doc.line(margin, yPosition, pageWidth - margin, yPosition);
+            yPosition += 15;
+
+            // Content
+            doc.setFontSize(11);
+            doc.setTextColor(60, 60, 60);
+            
+            // Clean the report text for PDF
+            const cleanText = currentReport
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/#{1,6}\s*/g, '')
+                .replace(/\n{3,}/g, '\n\n')
+                .replace(/\|.*?\|/g, '') // Remove table formatting for PDF
+                .trim();
+
+            const lines = doc.splitTextToSize(cleanText, maxWidth);
+            
+            lines.forEach(line => {
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 25;
+                }
+                
+                // Handle different content types
+                if (line.includes('Executive Summary') || 
+                    line.includes('Event Objectives') || 
+                    line.includes('Venue Options') ||
+                    line.includes('Agenda') ||
+                    line.includes('Budget Breakdown') ||
+                    line.includes('Recommendations')) {
+                    yPosition += 5;
+                    doc.setFontSize(16);
+                    doc.setTextColor(99, 102, 241);
+                    doc.text(line, margin, yPosition);
+                    doc.setFontSize(11);
+                    doc.setTextColor(60, 60, 60);
+                    yPosition += 3;
+                } else if (line.includes('Day 1:') || line.includes('Day 2:')) {
+                    yPosition += 3;
+                    doc.setFontSize(13);
+                    doc.setTextColor(139, 92, 246);
+                    doc.text(line, margin, yPosition);
+                    doc.setFontSize(11);
+                    doc.setTextColor(60, 60, 60);
+                } else {
+                    doc.text(line, margin, yPosition);
+                }
+                
+                yPosition += lineHeight;
+            });
+
+            // Footer with page numbers
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                
+                // Footer line
+                doc.setDrawColor(220, 220, 220);
+                doc.setLineWidth(0.3);
+                doc.line(margin, doc.internal.pageSize.height - 20, pageWidth - margin, doc.internal.pageSize.height - 20);
+                
+                // Footer text
+                doc.text(
+                    'Generated by Eventix-AI - Your Intelligent Event Planning Assistant',
+                    margin,
+                    doc.internal.pageSize.height - 12
+                );
+                doc.text(
+                    `Page ${i} of ${totalPages}`,
+                    pageWidth - margin,
+                    doc.internal.pageSize.height - 12,
+                    { align: 'right' }
+                );
+            }
+
+            // Save the PDF with timestamp
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            doc.save(`eventix-ai-plan-${timestamp}.pdf`);
+        }
+
+        // Event listeners
+        generateBtn.addEventListener('click', generateEventPlan);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        // Enhanced keyboard support
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                generateEventPlan();
+            }
+        });
+
+        // Auto-resize textarea
+        promptInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.max(140, this.scrollHeight) + 'px';
+        });
+
+        // Character counter (optional enhancement)
+        promptInput.addEventListener('input', function() {
+            const length = this.value.length;
+            if (length > 0 && length < 50) {
+                this.style.borderColor = '#f59e0b';
+            } else if (length >= 50) {
+                this.style.borderColor = '#10b981';
+            } else {
+                this.style.borderColor = '#e5e7eb';
+            }
+        });
+    </script>
+</body>
+</html>

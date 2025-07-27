@@ -4,3 +4,5 @@ langgraph
 pydantic
 httpx
 python-dotenv
+pdfkit
+markdown
